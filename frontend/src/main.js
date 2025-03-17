@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require("electron");
+const { app, BrowserWindow, Menu } = require("electron");
 const path = require("path");
 
 let mainWindow;
@@ -26,6 +26,10 @@ app.whenReady().then(() => {
     mainWindow.on("closed", () => {
         mainWindow = null;
     });
+
+    // Remove the default menu
+    Menu.setApplicationMenu(null);
+
 });
 
 app.on("window-all-closed", () => {
