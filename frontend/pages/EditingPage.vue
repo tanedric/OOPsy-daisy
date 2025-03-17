@@ -1,0 +1,3 @@
+<template>
+    editing page
+</template>
