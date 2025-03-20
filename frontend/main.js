@@ -11,6 +11,8 @@ app.whenReady().then(() => {
             contextIsolation: true,
             enableRemoteModule: false,
             preload: path.join(__dirname, "preload.js"), // Add preload script
+            nodeIntegration: true,
+            zoomFactor:1.0
         }
     });
 
