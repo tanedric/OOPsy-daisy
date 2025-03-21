@@ -1,27 +1,29 @@
 <template>
-    <div class="background">
-        <h1>
-            Welcome to landing page
-        </h1>
-        <button @click="this.$router.push('/EditingPage')">
-            Less EDIT
-        </button>
+    <div class="image-container">
+        <div class="canvas">
 
-        <div @wheel="handleZoom" class="zoom-container">
-            <div ref="imageWrapper" class="image-wrapper">
-                <img src="/assets/portrait.jpg" class="zoom-image" />
+            <div @wheel="handleZoom" class="zoom-container">
+                <div ref="imageWrapper" class="image-wrapper">
+
+                    <img :src="image" alt="ID Photo" class="photo" />
+                </div>
             </div>
         </div>
     </div>
-
-
 </template>
 
 <script>
 export default {
+    props: {
+        image: {
+            type: String,
+            //image is passed as prop from above
+            // default: "/assets/portrait.jpg" // Default value if no prop is passed
+        }
+    },
+
     data() {
         return {
-            imageSrc: "path_to_your_image.jpg", // Your image source
             scale: 1, // Initial zoom level (scale)
         };
     },
@@ -58,42 +60,49 @@ export default {
             imageWrapper.style.transform = `scale(${this.scale})`; // Apply zoom
         },
     },
-};
+}
 </script>
 
 <style scoped>
+.image-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #121416;
+    overflow: auto;
+}
+
+.canvas {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.photo {
+    display: block;
+    max-width: 90%;
+    max-height: 80vh;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+
+    /* width: 100%;
+    height: 100%; */
+    object-fit: contain;
+    transition: transform 0.2s ease-in-out;
+
+}
+
 .zoom-container {
     position: relative;
     width: 100%;
     height: 100%;
-    overflow: hidden;
+    /* overflow: hidden; */
 }
 
 .image-wrapper {
     transition: transform 0.1s ease;
     width: 100%;
     height: 100%;
-}
-
-.zoom-image {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    transition: transform 0.2s ease-in-out;
-}
-
-
-.background {
-    height: 100%;
-    width: 100%;
-    /* background-color: purple; */
-    /* Ensure background fills */
-    background: repeating-linear-gradient(
-  45deg,
-  #606dbc,
-  #606dbc 10px,
-  #465298 10px,
-  #465298 20px
-);
 }
 </style>
