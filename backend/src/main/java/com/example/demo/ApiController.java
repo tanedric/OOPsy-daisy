@@ -1,9 +1,15 @@
 package com.example.demo;
 
+import java.io.InputStream;
+
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.example.services.uploadImageService;
 
 @RestController
 @RequestMapping("/api")
@@ -17,5 +23,15 @@ public class ApiController {
     @GetMapping("/message")
     public String getMessage() {
         return "Hello from Spring Boot!";
+    }
+    @PostMapping("/upload")
+    public String uploadImage(MultipartFile file) {
+        try {
+            // Call from service file
+            uploadImageService.saveImage(file);
+            return "Image uploaded successfully!";
+        } catch (Exception e) {
+            return "Error uploading image: " + e.getMessage();
+        }
     }
 }
