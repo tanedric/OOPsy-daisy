@@ -9,7 +9,7 @@
 
         <div @wheel="handleZoom" class="zoom-container">
             <div ref="imageWrapper" class="image-wrapper">
-                <img src="/assets/portrait.jpg" class="zoom-image" />
+                <!-- <img src="/assets/portrait.jpg" class="zoom-image" /> -->
             </div>
         </div>
     </div>
