@@ -1,5 +1,14 @@
+
 <template>
+
   <div class="editing-page">
+    <input 
+  type="file" 
+  ref="fileInput" 
+  @change="uploadNewImage" 
+  style="display: none;" 
+  accept="image/*" 
+/>
     <!-- Header Component -->
     <Header 
       @new-project="createNewProject"
@@ -63,8 +72,8 @@ export default {
       this.activeFeature = null;
     },
     createNewProject() {
-      console.log('Creating new project');
-    },
+  this.$refs.fileInput.click(); // trigger file selection
+},
     saveProject() {
       console.log('Saving project');
     },
@@ -78,10 +87,45 @@ export default {
     redoAction() {
       console.log('Redo action');
     },
-    applyChanges(changes) {
-      console.log('Applying changes:', changes);
-      this.canUndo = true;
-    }
+    async uploadNewImage(event) {
+  const file = event.target.files[0];
+  const formData = new FormData();
+  formData.append("file", file);
+
+  await fetch("http://localhost:8080/api/upload", {
+    method: "POST",
+    body: formData
+  });
+
+  const response = await fetch("http://localhost:8080/api/image/get");
+  const blob = await response.blob();
+  this.currentPhoto = URL.createObjectURL(blob);
+  console.log("Image uploaded and displayed from backend.");
+},
+    async applyChanges(changes) {
+  console.log('Applying changes:', changes);
+
+  if (changes.type === 'crop') {
+    await fetch("http://localhost:8080/api/crop", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        x: 0, // real x if needed
+        y: 0,
+        width: changes.width,
+        height: changes.height
+      })
+    });
+
+    const response = await fetch("http://localhost:8080/api/image/get");
+    const blob = await response.blob();
+    this.currentPhoto = URL.createObjectURL(blob);
+  }
+
+  this.canUndo = true;
+}
+
+
   }
 }
 </script>
