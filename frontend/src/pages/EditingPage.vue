@@ -1,16 +1,14 @@
-
 <template>
-
   <div class="editing-page">
-    <input 
-  type="file" 
-  ref="fileInput" 
-  @change="uploadNewImage" 
-  style="display: none;" 
-  accept="image/*" 
-/>
+    <input
+      type="file"
+      ref="fileInput"
+      @change="uploadNewImage"
+      style="display: none"
+      accept="image/*"
+    />
     <!-- Header Component -->
-    <Header 
+    <Header
       @new-project="createNewProject"
       @save-project="saveProject"
       @export-project="exportProject"
@@ -19,21 +17,25 @@
       :canUndo="canUndo"
       :canRedo="canRedo"
     />
-    
+
     <div class="main-container">
       <!-- Feature Panel Component -->
-      <FeaturePanel 
-        :activeFeature="activeFeature" 
-        @feature-selected="setActiveFeature" 
+      <FeaturePanel
+        :activeFeature="activeFeature"
+        @feature-selected="setActiveFeature"
       />
-      
+
       <!-- Image Component -->
-      <ImageComponent 
-        :image="currentPhoto || '/assets/zhiyuan.jpg'"
-      />
-      
+      <ImageComponent
+      ref="imageComponent"
+      :image="currentPhoto || '/assets/zhiyuan.jpg'"
+      :activeFeature="activeFeature"
+      @crop-area="cropArea = $event"
+    />
+
+
       <!-- Control Panel Component (only shown when a feature is selected) -->
-      <ControlPanel 
+      <ControlPanel
         v-if="activeFeature && activeFeature !== 'upload'"
         :feature="activeFeature"
         @close="closeControlPanel"
@@ -44,26 +46,28 @@
 </template>
 
 <script>
-import Header from '../components/Header.vue';
-import FeaturePanel from '../components/FeaturePanel.vue';
-import ImageComponent from '../components/ImageComponent.vue';
-import ControlPanel from '../components/ControlPanel.vue';
+import Header from "../components/Header.vue";
+import FeaturePanel from "../components/FeaturePanel.vue";
+import ImageComponent from "../components/ImageComponent.vue";
+import ControlPanel from "../components/ControlPanel.vue";
 
 export default {
   components: {
     Header,
     FeaturePanel,
     ImageComponent,
-    ControlPanel
+    ControlPanel,
   },
   data() {
     return {
       activeFeature: null,
       currentPhoto: null,
       canUndo: false,
-      canRedo: false
+      canRedo: false,
+      cropArea: null,
     };
   },
+
   methods: {
     setActiveFeature(feature) {
       this.activeFeature = feature;
@@ -72,62 +76,57 @@ export default {
       this.activeFeature = null;
     },
     createNewProject() {
-  this.$refs.fileInput.click(); // trigger file selection
-},
+      this.$refs.fileInput.click(); // trigger file selection
+    },
     saveProject() {
-      console.log('Saving project');
+      console.log("Saving project");
     },
     exportProject() {
-      console.log('Exporting project');
+      console.log("Exporting project");
     },
     undoAction() {
-      console.log('Undo action');
+      console.log("Undo action");
       this.canRedo = true;
     },
     redoAction() {
-      console.log('Redo action');
+      console.log("Redo action");
     },
     async uploadNewImage(event) {
-  const file = event.target.files[0];
-  const formData = new FormData();
-  formData.append("file", file);
+      const file = event.target.files[0];
+      const formData = new FormData();
+      formData.append("file", file);
 
-  await fetch("http://localhost:8080/api/upload", {
-    method: "POST",
-    body: formData
-  });
+      await fetch("http://localhost:8080/api/upload", {
+        method: "POST",
+        body: formData,
+      });
 
-  const response = await fetch("http://localhost:8080/api/image/get");
-  const blob = await response.blob();
-  this.currentPhoto = URL.createObjectURL(blob);
-  console.log("Image uploaded and displayed from backend.");
-},
+      const response = await fetch("http://localhost:8080/api/image/get");
+      const blob = await response.blob();
+      this.currentPhoto = URL.createObjectURL(blob);
+      console.log("Image uploaded and displayed from backend.");
+    },
     async applyChanges(changes) {
-  console.log('Applying changes:', changes);
+      console.log("Applying changes:", changes);
 
-  if (changes.type === 'crop') {
-    await fetch("http://localhost:8080/api/crop", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        x: 0, // real x if needed
-        y: 0,
-        width: changes.width,
-        height: changes.height
-      })
-    });
+      if (changes.type === "crop" && this.cropArea) {
+        await fetch("http://localhost:8080/api/crop", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(this.cropArea),
+        });
 
-    const response = await fetch("http://localhost:8080/api/image/get");
-    const blob = await response.blob();
-    this.currentPhoto = URL.createObjectURL(blob);
-  }
+        const response = await fetch("http://localhost:8080/api/image/get");
+        const blob = await response.blob();
+        this.currentPhoto = URL.createObjectURL(blob);
+        this.cropArea = null;
+        this.$refs.imageComponent.clearCropBox();
+      }
 
-  this.canUndo = true;
-}
-
-
-  }
-}
+      this.canUndo = true;
+    },
+  },
+};
 </script>
 
 <style scoped>
@@ -138,7 +137,7 @@ export default {
   width: 100%;
   background-color: #1e2124;
   color: #ffffff;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   overflow: hidden;
 }
 
