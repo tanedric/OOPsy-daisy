@@ -1,39 +1,24 @@
 package com.example;
 
-import java.io.InputStream;
-
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
-
-import com.example.services.UploadImageService;
 import com.example.dto.CropRequest;
 import com.example.model.ImageState;
 import com.example.services.CropImageService;
+import com.example.services.UploadImageService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-
-import org.springframework.http.MediaType;
-
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "http://localhost:5173")  // Allow Vite frontend
-// Enables CORS to allow frontend (Vite at localhost:5173) to call backend APIs
-// Without this, browser blocks requests due to cross-origin restrictions
-// Best practice: Use a global CORS config instead of adding @CrossOrigin in every controller
-
+@CrossOrigin(origins = "http://localhost:5173")
 public class ApiController {
 
     private final ImageState state = new ImageState();
@@ -44,37 +29,63 @@ public class ApiController {
     @Autowired
     private CropImageService cropImageService;
 
-    @GetMapping("/message")
-    public String getMessage() {
-        return "Hello from Spring Boot!";
-    }
     @PostMapping("/upload")
-    public String uploadImage(MultipartFile file) {
+    public ResponseEntity<?> upload(@RequestParam("file") MultipartFile file) {
         try {
-            // Call from service file
-            uploadImageService.saveImage(file, state);
-            return "Image uploaded successfully!";
+            BufferedImage uploadedImage = ImageIO.read(file.getInputStream());
+            state.setOriginalImage(uploadedImage);
+            state.setCurrentImage(state.cloneImage(uploadedImage));
+            return ResponseEntity.ok("Image uploaded successfully");
         } catch (Exception e) {
-            return "Error uploading image: " + e.getMessage();
+            return ResponseEntity.badRequest().body("Error uploading image: " + e.getMessage());
         }
     }
 
     @PostMapping("/crop")
-    public ResponseEntity<String> crop(@RequestBody CropRequest crop) {
-        return cropImageService.crop(crop, state);
+    public ResponseEntity<?> crop(@RequestBody CropRequest cropRequest) {
+        return cropImageService.crop(cropRequest, state);
     }
 
     @GetMapping("/image/get")
-public ResponseEntity<byte[]> getImage() throws IOException {
-    BufferedImage img = state.getCurrentImage();
-    if (img == null) return ResponseEntity.notFound().build();
+    public ResponseEntity<?> getCurrentImage() throws IOException {
+        BufferedImage img = state.getCurrentImage();
+        if (img == null)
+            return ResponseEntity.notFound().build();
 
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    ImageIO.write(img, "png", baos);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(img, "png", baos);
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_PNG)
+                .body(baos.toByteArray());
+    }
 
-    return ResponseEntity.ok()
-            .contentType(MediaType.IMAGE_PNG)
-            .body(baos.toByteArray());
-}
+    @GetMapping("/undo")
+    public ResponseEntity<?> undo() {
+        if (!state.hasHistory()) {
+            return ResponseEntity.badRequest().body("No history available");
+        }
 
+        BufferedImage previous = state.popHistory();
+        state.setCurrentImage(previous);
+        return ResponseEntity.ok("Undo successful");
+    }
+
+    @GetMapping("/redo")
+    public ResponseEntity<?> redo() {
+        BufferedImage originalImage = state.getOriginalImage();
+        if (originalImage == null) {
+            return ResponseEntity.badRequest().body("No original image available");
+        }
+
+        state.pushHistory(state.getCurrentImage());
+        state.setCurrentImage(state.cloneImage(originalImage));
+        return ResponseEntity.ok("Redo successful - restored to original image");
+    }
+
+    @GetMapping("/history/status")
+    public ResponseEntity<Map<String, Boolean>> getHistoryStatus() {
+        return ResponseEntity.ok(Map.of(
+                "hasHistory", state.hasHistory(),
+                "hasOriginal", state.getOriginalImage() != null));
+    }
 }

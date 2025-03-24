@@ -27,12 +27,11 @@
 
       <!-- Image Component -->
       <ImageComponent
-      ref="imageComponent"
-      :image="currentPhoto || '/assets/zhiyuan.jpg'"
-      :activeFeature="activeFeature"
-      @crop-area="cropArea = $event"
-    />
-
+        ref="imageComponent"
+        :image="currentPhoto || '/assets/zhiyuan.jpg'"
+        :activeFeature="activeFeature"
+        @crop-area="cropArea = $event"
+      />
 
       <!-- Control Panel Component (only shown when a feature is selected) -->
       <ControlPanel
@@ -84,46 +83,122 @@ export default {
     exportProject() {
       console.log("Exporting project");
     },
-    undoAction() {
-      console.log("Undo action");
-      this.canRedo = true;
+
+    // Updated undo method with actual API call
+    async undoAction() {
+      try {
+        const response = await fetch("http://localhost:8080/api/undo");
+
+        if (response.ok) {
+          // Get the updated image
+          const imageResponse = await fetch(
+            "http://localhost:8080/api/image/get"
+          );
+          const blob = await imageResponse.blob();
+          this.currentPhoto = URL.createObjectURL(blob);
+
+          // Check if we still have history available
+          const historyResponse = await fetch(
+            "http://localhost:8080/api/history/status"
+          );
+          const historyStatus = await historyResponse.json();
+          this.canUndo = historyStatus.hasHistory;
+
+          // We can always redo after an undo
+          this.canRedo = true;
+        } else {
+          console.error("Failed to undo:", await response.text());
+        }
+      } catch (error) {
+        console.error("Error during undo:", error);
+      }
     },
-    redoAction() {
-      console.log("Redo action");
+
+    // Updated redo method with actual API call
+    async redoAction() {
+      try {
+        const response = await fetch("http://localhost:8080/api/redo");
+
+        if (response.ok) {
+          // Get the updated image
+          const imageResponse = await fetch(
+            "http://localhost:8080/api/image/get"
+          );
+          const blob = await imageResponse.blob();
+          this.currentPhoto = URL.createObjectURL(blob);
+
+          // Per requirement, redo returns to original image, so we can no longer redo after that
+          this.canRedo = false;
+
+          // But we can undo again since we've saved the current state to history
+          this.canUndo = true;
+        } else {
+          console.error("Failed to redo:", await response.text());
+        }
+      } catch (error) {
+        console.error("Error during redo:", error);
+      }
     },
+
     async uploadNewImage(event) {
       const file = event.target.files[0];
+      if (!file) return;
+
       const formData = new FormData();
       formData.append("file", file);
 
-      await fetch("http://localhost:8080/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+      try {
+        const uploadResponse = await fetch("http://localhost:8080/api/upload", {
+          method: "POST",
+          body: formData,
+        });
 
-      const response = await fetch("http://localhost:8080/api/image/get");
-      const blob = await response.blob();
-      this.currentPhoto = URL.createObjectURL(blob);
-      console.log("Image uploaded and displayed from backend.");
+        if (uploadResponse.ok) {
+          const response = await fetch("http://localhost:8080/api/image/get");
+          const blob = await response.blob();
+          this.currentPhoto = URL.createObjectURL(blob);
+          console.log("Image uploaded and displayed from backend.");
+
+          // Reset undo/redo state
+          this.canUndo = false; // No history for a new image
+          this.canRedo = false; // No future for a new image
+        } else {
+          console.error("Failed to upload image:", await uploadResponse.text());
+        }
+      } catch (error) {
+        console.error("Error uploading image:", error);
+      }
     },
+
     async applyChanges(changes) {
       console.log("Applying changes:", changes);
 
       if (changes.type === "crop" && this.cropArea) {
-        await fetch("http://localhost:8080/api/crop", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(this.cropArea),
-        });
+        try {
+          const cropResponse = await fetch("http://localhost:8080/api/crop", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(this.cropArea),
+          });
 
-        const response = await fetch("http://localhost:8080/api/image/get");
-        const blob = await response.blob();
-        this.currentPhoto = URL.createObjectURL(blob);
-        this.cropArea = null;
-        this.$refs.imageComponent.clearCropBox();
+          if (cropResponse.ok) {
+            const response = await fetch("http://localhost:8080/api/image/get");
+            const blob = await response.blob();
+            this.currentPhoto = URL.createObjectURL(blob);
+            this.cropArea = null;
+            this.$refs.imageComponent.clearCropBox();
+
+            // We now have history (the pre-crop image)
+            this.canUndo = true;
+            // We can redo to get back to original
+            this.canRedo = true;
+          } else {
+            console.error("Failed to crop image:", await cropResponse.text());
+          }
+        } catch (error) {
+          console.error("Error cropping image:", error);
+        }
       }
-
-      this.canUndo = true;
     },
   },
 };
