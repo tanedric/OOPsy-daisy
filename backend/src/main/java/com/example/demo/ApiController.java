@@ -2,6 +2,7 @@ package com.example.demo;
 
 import java.io.InputStream;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,7 +14,7 @@ import java.util.Map;
 import java.util.HashMap;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.example.services.uploadImageService;
+import com.example.services.UploadImageService;
 
 @RestController
 @RequestMapping("/api")
@@ -26,6 +27,9 @@ public class ApiController {
 
     @Autowired
     private GoogleDriveService googleDriveService;
+    
+    @Autowired
+    private UploadImageService uploadService;
 
     @GetMapping("/message")
     public String getMessage() {
@@ -34,8 +38,8 @@ public class ApiController {
     @PostMapping("/upload")
     public String uploadImage(MultipartFile file) {
         try {
-            // Call from service file
-            uploadImageService.saveImage(file);
+            // Use injected service
+            uploadService.saveImage(file);
             return "Image uploaded successfully!";
         } catch (Exception e) {
             return "Error uploading image: " + e.getMessage();

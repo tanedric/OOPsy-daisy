@@ -5,10 +5,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-public class uploadImageService {
-    public static void saveImage(MultipartFile file) throws IOException {
+@Service
+public class UploadImageService {
+    public void saveImage(MultipartFile file) throws IOException {
         InputStream imageInputStream = file.getInputStream();
         String destinationPath = "uploaded_images/" + file.getOriginalFilename();  // Save to a folder "uploaded_images"
 
@@ -33,4 +35,4 @@ public class uploadImageService {
         }
     }
     
-}
+} 
