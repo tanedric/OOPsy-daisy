@@ -4,7 +4,7 @@
             Welcome to landing page
         </h1>
         <button @click="this.$router.push('/EditingPage')">
-            Less EDIT
+            Edit
         </button>
 
         <div @wheel="handleZoom" class="zoom-container">

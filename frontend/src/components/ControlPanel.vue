@@ -163,12 +163,22 @@
             <button class="action-btn secondary" @click="resetControls">Reset</button>
           </div>
         </div>
+        
+        <!-- Google Drive files component -->
+        <div v-if="feature === 'google-drive'" class="control-group">
+          <GoogleDriveFiles />
+        </div>
       </div>
     </div>
   </template>
   
   <script>
+  import GoogleDriveFiles from './GoogleDriveFiles.vue';
+  
   export default {
+    components: {
+      GoogleDriveFiles
+    },
     props: {
       feature: {
         type: String,
@@ -211,7 +221,8 @@
           'background-replace': 'Background Replacement',
           'clothes': 'Clothes Replacement',
           'face': 'Face Centering',
-          'enhance': 'Photo Enhancement'
+          'enhance': 'Photo Enhancement',
+          'google-drive': 'Google Drive Files'
         };
         return titles[feature] || 'Edit Photo';
       },
