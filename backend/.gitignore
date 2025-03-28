@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Google API Credentials ###
+src/main/resources/credential.json
+tokens/
+uploaded_images/
