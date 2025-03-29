@@ -1,0 +1,1 @@
+java -Djava.library.path=/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home/bin -cp .:/usr/local/share/java/opencv4/opencv-4120.jar CenterPortraitOnFaces
